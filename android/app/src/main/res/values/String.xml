@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name"> Alexandria</string>
+    <string name="facebook_app_id">1190940235398980</string>
+    <string name="fb_login_protocol_scheme">fb1190940235398980</string>
+    <string name="facebook_client_token">1c53bc6f6e8edabfae3b783bd99bd9fe</string>
+</resources>
