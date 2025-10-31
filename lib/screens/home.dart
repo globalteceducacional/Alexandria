@@ -1,12 +1,12 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:elearn/generated/l10n.dart';
 import 'package:elearn/model/Profile.dart';
 import 'package:elearn/model/allcategory.dart';
 import 'package:elearn/model/besthomebook.dart';
 import 'package:elearn/model/homecategory.dart';
-import 'package:elearn/screens/explore.dart';
 import 'package:elearn/service/httpservice.dart';
+import 'package:elearn/widgets/imageview.dart';
 import 'package:elearn/widgets/richtxt.dart';
+import 'package:elearn/widgets/safe_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart'; // Caso esteja usando flutter_screenutil
 import 'package:get/get.dart';
@@ -220,30 +220,11 @@ class _HomeState extends State<Home> {
                                       ClipRRect(
                                         borderRadius:
                                             BorderRadius.circular(8.r),
-                                        child: CachedNetworkImage(
-                                          fit: BoxFit.cover,
-                                          width: categoryImageWidth,
-                                          height: categoryImageHeight,
+                                        child: SafeCategoryImageWidget(
                                           imageUrl: snapshot.data!
                                               .ebookApp[index].categoryImage,
-                                          placeholder: (context, url) =>
-                                              Shimmer.fromColors(
-                                            baseColor: shimmerBaseColor(),
-                                            highlightColor:
-                                                shimmerHighlightColor(),
-                                            child: Container(
-                                              width: categoryImageWidth,
-                                              height: categoryImageHeight,
-                                              color: comboBlackAndWhite(),
-                                            ),
-                                          ),
-                                          errorWidget: (context, url, error) =>
-                                              Image.asset(
-                                            "assets/images/noimagefound.jpg",
-                                            width: categoryImageWidth,
-                                            height: categoryImageHeight,
-                                            fit: BoxFit.cover,
-                                          ),
+                                          width: categoryImageWidth,
+                                          height: categoryImageHeight,
                                         ),
                                       ),
                                       Container(

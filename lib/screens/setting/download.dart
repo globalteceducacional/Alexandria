@@ -1,7 +1,7 @@
 import 'package:elearn/consttants.dart';
 import 'package:elearn/generated/l10n.dart';
-import 'package:elearn/screens/explore.dart';
 import 'package:elearn/screens/view.dart';
+import 'package:elearn/widgets/imageview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';

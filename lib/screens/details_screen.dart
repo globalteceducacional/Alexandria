@@ -3,16 +3,16 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elearn/widgets/star_rating.dart';
 import 'package:elearn/databasefavourite/db.dart';
 import 'package:elearn/generated/l10n.dart';
 import 'package:elearn/main.dart';
 import 'package:elearn/model/allcomments.dart';
 import 'package:elearn/model/detailsProvider.dart';
 import 'package:elearn/model/singlebookbyid.dart';
-import 'package:elearn/screens/explore.dart';
 import 'package:elearn/screens/view.dart';
 import 'package:elearn/service/httpservice.dart';
+import 'package:elearn/widgets/imageview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -29,8 +29,7 @@ extension ColorUtils on Color {
   Color withAlpha(double opacity) {
     // Convert opacity (0.0-1.0) to alpha (0-255)
     int alpha = (opacity * 255).round();
-    return Color.fromARGB(
-        alpha, this.r.toInt(), this.g.toInt(), this.b.toInt());
+    return Color.fromARGB(alpha, r.toInt(), g.toInt(), b.toInt());
   }
 }
 
@@ -127,6 +126,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
           // Iniciar temporizador para verificar periodicamente o estado do botão
           _startPeriodicBookCheck();
+
+          // Verificar se usuário já avaliou
+          checkRating();
         }
       });
     });
@@ -309,20 +311,34 @@ class _DetailsScreenState extends State<DetailsScreen> {
       return;
     }
     _form.currentState!.save();
-    var response = await http.get(Uri.parse(
-        "$apiLink/api_comment.php?user_id=$userId&book_id=${widget.id}&comment_text=${commentController.text}"));
-    if (response.statusCode == 200) {
-      var data = jsonDecode(response.body);
-      if (data["EBOOK_APP"][0]['success'] == "1") {
-        setState(() {
-          getBookData();
-        });
-        commentController.clear();
-        focusNode.unfocus();
-        isComment.value = false;
+
+    try {
+      // Usar api.php com método add_comment
+      var response = await http.get(Uri.parse(
+          "$apiLink/api.php?method_name=add_comment&user_id=$userId&book_id=${widget.id}&comment_text=${Uri.encodeComponent(commentController.text)}"));
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        if (data["EBOOK_APP"][0]['success'] == "1") {
+          setState(() {
+            getBookData();
+          });
+          commentController.clear();
+          focusNode.unfocus();
+          isComment.value = false;
+          showToast(msg: "Comentário enviado com sucesso!");
+        } else {
+          showToast(
+              msg: data["EBOOK_APP"][0]['msg'] ?? "Erro ao enviar comentário");
+          isComment.value = false;
+        }
+      } else {
+        throw "Erro ao enviar comentário: ${response.statusCode}";
       }
-    } else {
-      throw "Fail To Get Comments !1!";
+    } catch (e) {
+      debugPrint("Erro ao enviar comentário: $e");
+      showToast(msg: "Erro ao enviar comentário");
+      isComment.value = false;
     }
   }
 
@@ -344,6 +360,161 @@ class _DetailsScreenState extends State<DetailsScreen> {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
+  }
+
+  // Métodos para avaliação por estrelas
+  int? selectedRating;
+  bool isRatingSubmitting = false;
+  bool hasRated = false;
+
+  Future<void> checkRating() async {
+    if (userId == null) return;
+
+    try {
+      var response = await http.get(Uri.parse(
+          "$apiLink/api.php?method_name=rating_check&user_id=$userId&book_id=${widget.id}"));
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        if (data["EBOOK_APP"][0]['sucess'] == "1") {
+          // Se já avaliou, pegar a nota atual
+          int currentRate = int.tryParse(data["EBOOK_APP"][0]['rate']) ?? 0;
+          setState(() {
+            hasRated = true;
+            selectedRating = currentRate; // Manter a avaliação visível
+          });
+        }
+      }
+    } catch (e) {
+      print('Erro ao verificar avaliação: $e');
+    }
+  }
+
+  Future<void> submitRating(int rating) async {
+    if (userId == null || isRatingSubmitting) return;
+
+    setState(() {
+      isRatingSubmitting = true;
+    });
+
+    try {
+      var response = await http.get(Uri.parse(
+          "$apiLink/api.php?method_name=submit_rating&user_id=$userId&book_id=${widget.id}&rate=$rating"));
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        if (data["EBOOK_APP"][0]['success'] == "1") {
+          showToast(msg: "Avaliação enviada com sucesso!");
+          setState(() {
+            hasRated = true;
+            isRatingSubmitting = false;
+            // Manter a avaliação selecionada visível
+            selectedRating = rating;
+          });
+          // Recarregar dados do livro
+          getBookData();
+        } else {
+          showToast(msg: "Erro ao enviar avaliação");
+          setState(() {
+            isRatingSubmitting = false;
+          });
+        }
+      }
+    } catch (e) {
+      showToast(msg: "Erro ao enviar avaliação: $e");
+      setState(() {
+        isRatingSubmitting = false;
+      });
+    }
+  }
+
+  Widget _buildRatingSection() {
+    return Container(
+      width: 250.w,
+      padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 15.w),
+      decoration: BoxDecoration(
+        color: comboBlackAndWhite().withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(15.0.r),
+        boxShadow: [
+          BoxShadow(
+            color: comboGreyAndBlack().withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            "Avaliar este livro",
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontFamily: 'Gilroy-Bold',
+              color: comboWhiteAndBlack(),
+            ),
+          ),
+          SizedBox(height: 10.h),
+          // Exibir estrelas (sempre permite seleção, mesmo se já avaliou)
+          StarRating(
+            initialRating: selectedRating ?? 0,
+            onRatingChanged: (rating) {
+              setState(() {
+                selectedRating = rating;
+              });
+            },
+            starSize: 28,
+            filledColor: Color(0xFFFFD700),
+            unfilledColor: comboLightGreyAndGrey(),
+          ),
+          SizedBox(height: 12.h),
+          // Botão de enviar (sempre visível se houver seleção)
+          if (selectedRating != null)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isRatingSubmitting
+                    ? null
+                    : () => submitRating(selectedRating!),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: getPrimaryAccentColor()[400],
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 8.h),
+                ),
+                child: isRatingSubmitting
+                    ? SizedBox(
+                        width: 20.w,
+                        height: 20.h,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (hasRated) ...[
+                            Icon(Icons.edit, size: 16.r, color: Colors.white),
+                            SizedBox(width: 5.w),
+                          ],
+                          Text(
+                            hasRated ? "Atualizar" : "Enviar",
+                            style: TextStyle(
+                              fontFamily: 'Gilroy-Medium',
+                              fontSize: 12.sp,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Color getTextColor() {
@@ -391,14 +562,16 @@ class _DetailsScreenState extends State<DetailsScreen> {
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-        body: OrientationBuilder(
-          builder: (context, orientation) {
-            if (orientation == Orientation.portrait) {
-              return _buildPortraitLayout(detailsProvider);
-            } else {
-              return _buildLandscapeLayout(detailsProvider);
-            }
-          },
+        body: SafeArea(
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              if (orientation == Orientation.portrait) {
+                return _buildPortraitLayout(detailsProvider);
+              } else {
+                return _buildLandscapeLayout(detailsProvider);
+              }
+            },
+          ),
         ),
       );
     });
@@ -423,7 +596,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       borderRadius: BorderRadius.circular(10.r),
                       boxShadow: [
                         BoxShadow(
-                          color: comboGreyAndBlack().withAlpha(76),
+                          color: comboGreyAndBlack().withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: Offset(0, 5),
                         ),
@@ -443,11 +616,11 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   width: 250.w,
                   padding: EdgeInsets.symmetric(vertical: 10.h),
                   decoration: BoxDecoration(
-                    color: comboBlackAndWhite().withAlpha(153),
+                    color: comboBlackAndWhite().withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(15.0.r),
                     boxShadow: [
                       BoxShadow(
-                        color: comboGreyAndBlack().withAlpha(30),
+                        color: comboGreyAndBlack().withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: Offset(0, 4),
                       ),
@@ -703,7 +876,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
                             ),
                     ],
                   ),
-                )
+                ),
+                SizedBox(height: 15.h),
+                // Seção de Avaliação - Logo abaixo dos botões
+                if (userId != null) _buildRatingSection(),
               ],
             ),
           ),
@@ -714,7 +890,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
               text: htmlString(html: widget.bookDescription),
               style: TextStyle(
                 fontSize: 14.sp,
-                color: comboWhiteAndBlack().withAlpha(192),
+                color: comboWhiteAndBlack().withValues(alpha: 0.8),
                 fontFamily: "Times New Roman",
                 height: 1.4,
               ),
@@ -722,6 +898,39 @@ class _DetailsScreenState extends State<DetailsScreen> {
             ),
           ),
           SizedBox(height: 8.h),
+          // Exibir média de avaliação
+          if (singleBookById != null && singleBookById!.ebookApp.isNotEmpty)
+            Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 5.h),
+              child: Row(
+                children: [
+                  Icon(Icons.star, color: Color(0xFFFFD700), size: 18.r),
+                  SizedBox(width: 5.w),
+                  Text(
+                    singleBookById!.ebookApp[0].rateAvg.isNotEmpty
+                        ? (double.tryParse(singleBookById!.ebookApp[0].rateAvg)
+                                ?.toStringAsFixed(1) ??
+                            "0")
+                        : "0",
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      color: comboWhiteAndBlack(),
+                      fontFamily: "Gilroy-Bold",
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  Text(
+                    "(${singleBookById!.ebookApp[0].totalRate} avaliações)",
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: comboWhiteAndBlack().withValues(alpha: 0.7),
+                      fontFamily: "Gilroy-Medium",
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Container(
             width: MediaQuery.of(context).size.width * 0.9,
             padding: EdgeInsets.symmetric(horizontal: 15.w),
@@ -743,7 +952,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
               text: htmlString(html: widget.authorDescription),
               style: TextStyle(
                 fontSize: 14.sp,
-                color: comboWhiteAndBlack().withAlpha(192),
+                color: comboWhiteAndBlack().withValues(alpha: 0.8),
                 fontFamily: "Times New Roman",
                 height: 1.4,
               ),
@@ -815,11 +1024,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                 height: 180.h,
                                 width: 135.w,
                                 decoration: BoxDecoration(
-                                  color: comboBlackAndWhite().withAlpha(30),
+                                  color: comboBlackAndWhite()
+                                      .withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(10.r),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: comboGreyAndBlack().withAlpha(30),
+                                      color: comboGreyAndBlack()
+                                          .withValues(alpha: 0.2),
                                       blurRadius: 5,
                                       offset: Offset(0, 3),
                                     ),
@@ -864,7 +1075,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                   style: TextStyle(
                                     fontFamily: "Times New Roman",
                                     fontSize: 10.0.sp,
-                                    color: comboWhiteAndBlack().withAlpha(192),
+                                    color: comboWhiteAndBlack()
+                                        .withValues(alpha: 0.75),
                                   ),
                                 ),
                               ),
@@ -1012,47 +1224,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: comboWhiteAndBlack().withAlpha(192),
+                              color:
+                                  comboWhiteAndBlack().withValues(alpha: 0.8),
                               fontFamily: "Times New Roman",
                               fontSize: 13.sp,
                               height: 1.3,
                             ),
                           ),
-                          leading: Container(
-                            decoration: BoxDecoration(
-                              border: bookUserId == userId
-                                  ? Border.all(
-                                      width: 2,
-                                      color: getSecondaryAccentColor())
-                                  : Border(),
-                              borderRadius: BorderRadius.circular(80.r),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(80.r),
-                              child: CachedNetworkImage(
-                                imageUrl:
-                                    snapshot.data!.ebookApp![index].userImage!,
-                                fit: BoxFit.cover,
-                                width: 60.w,
-                                height: 60.w,
-                                placeholder: (context, url) =>
-                                    Shimmer.fromColors(
-                                        baseColor: shimmerBaseColor(),
-                                        highlightColor: shimmerHighlightColor(),
-                                        child: Container(
-                                          width: 60.w,
-                                          height: 60.w,
-                                          color: comboBlackAndWhite(),
-                                        )),
-                                placeholderFadeInDuration: Duration(seconds: 2),
-                                errorWidget: (context, url, error) =>
-                                    Image.asset(
-                                  "assets/images/noimagefound.jpg",
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                          ),
+                          leading: null, // Removido avatar - apenas nome
                           trailing: Text(
                             snapshot.data!.ebookApp![index].dtRate.toString(),
                             style: TextStyle(
@@ -1071,7 +1250,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                             backgroundColor:
                                                 comboBlackAndWhite(),
                                             title: Text(
-                                              "Delete Comment ??",
+                                              "Excluir Comentário?",
                                               style: TextStyle(
                                                 color: comboWhiteAndBlack(),
                                                 fontFamily: "Gilroy-Bold",
@@ -1091,7 +1270,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                             actions: [
                                               TextButton(
                                                 child: Text(
-                                                  "Cancel",
+                                                  "Cancelar",
                                                   style: TextStyle(
                                                     color:
                                                         getPrimaryAccentColor(),
@@ -1104,7 +1283,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                               ),
                                               TextButton(
                                                 child: Text(
-                                                  "Delete",
+                                                  "Excluir",
                                                   style: TextStyle(
                                                     color:
                                                         getSecondaryAccentColor(),
@@ -1186,7 +1365,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       borderRadius: BorderRadius.circular(10.r),
                       boxShadow: [
                         BoxShadow(
-                          color: comboGreyAndBlack().withAlpha(76),
+                          color: comboGreyAndBlack().withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: Offset(0, 5),
                         ),
@@ -1206,11 +1385,11 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   width: 250.w,
                   padding: EdgeInsets.symmetric(vertical: 10.h),
                   decoration: BoxDecoration(
-                    color: comboBlackAndWhite().withAlpha(153),
+                    color: comboBlackAndWhite().withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(15.0.r),
                     boxShadow: [
                       BoxShadow(
-                        color: comboGreyAndBlack().withAlpha(30),
+                        color: comboGreyAndBlack().withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: Offset(0, 4),
                       ),
@@ -1466,7 +1645,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
                             ),
                     ],
                   ),
-                )
+                ),
+                SizedBox(height: 15.h),
+                // Seção de Avaliação - Logo abaixo dos botões (landscape)
+                if (userId != null) _buildRatingSection(),
               ],
             ),
           ),
@@ -1481,13 +1663,48 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   text: htmlString(html: widget.bookDescription),
                   style: TextStyle(
                     fontSize: 14.sp,
-                    color: comboWhiteAndBlack().withAlpha(192),
+                    color: comboWhiteAndBlack().withValues(alpha: 0.8),
                     fontFamily: "Times New Roman",
                     height: 1.4,
                   ),
                   maxLines: 5,
                 ),
                 SizedBox(height: 8.h),
+                // Exibir média de avaliação (landscape)
+                if (singleBookById != null &&
+                    singleBookById!.ebookApp.isNotEmpty)
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    padding: EdgeInsets.symmetric(vertical: 5.h),
+                    child: Row(
+                      children: [
+                        Icon(Icons.star, color: Color(0xFFFFD700), size: 18.r),
+                        SizedBox(width: 5.w),
+                        Text(
+                          singleBookById!.ebookApp[0].rateAvg.isNotEmpty
+                              ? (double.tryParse(
+                                          singleBookById!.ebookApp[0].rateAvg)
+                                      ?.toStringAsFixed(1) ??
+                                  "0")
+                              : "0",
+                          style: TextStyle(
+                            fontSize: 18.sp,
+                            color: comboWhiteAndBlack(),
+                            fontFamily: "Gilroy-Bold",
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Text(
+                          "(${singleBookById!.ebookApp[0].totalRate} avaliações)",
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: comboWhiteAndBlack().withValues(alpha: 0.7),
+                            fontFamily: "Gilroy-Medium",
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Container(
                   width: MediaQuery.of(context).size.width * 0.9,
                   child: Text(
@@ -1506,7 +1723,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   text: htmlString(html: widget.authorDescription),
                   style: TextStyle(
                     fontSize: 14.sp,
-                    color: comboWhiteAndBlack().withAlpha(192),
+                    color: comboWhiteAndBlack().withValues(alpha: 0.8),
                     fontFamily: "Times New Roman",
                     height: 1.4,
                   ),
@@ -1584,14 +1801,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                       height: 350.h,
                                       width: 100.w,
                                       decoration: BoxDecoration(
-                                        color:
-                                            comboBlackAndWhite().withAlpha(30),
+                                        color: comboBlackAndWhite()
+                                            .withValues(alpha: 0.2),
                                         borderRadius:
                                             BorderRadius.circular(10.r),
                                         boxShadow: [
                                           BoxShadow(
                                             color: comboGreyAndBlack()
-                                                .withAlpha(30),
+                                                .withValues(alpha: 0.2),
                                             blurRadius: 5,
                                             offset: Offset(0, 3),
                                           ),
@@ -1640,7 +1857,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                           fontFamily: "Times New Roman",
                                           fontSize: 10.0.sp,
                                           color: comboWhiteAndBlack()
-                                              .withAlpha(192),
+                                              .withValues(alpha: 0.75),
                                         ),
                                       ),
                                     ),
@@ -1790,49 +2007,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                   maxLines: 3,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: comboWhiteAndBlack().withAlpha(192),
+                                    color: comboWhiteAndBlack()
+                                        .withValues(alpha: 0.8),
                                     fontFamily: "Times New Roman",
                                     fontSize: 13.sp,
                                     height: 1.3,
                                   ),
                                 ),
-                                leading: Container(
-                                  decoration: BoxDecoration(
-                                    border: bookUserId == userId
-                                        ? Border.all(
-                                            width: 2,
-                                            color: getSecondaryAccentColor())
-                                        : Border(),
-                                    borderRadius: BorderRadius.circular(80.r),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(80.r),
-                                    child: CachedNetworkImage(
-                                      imageUrl: snapshot
-                                          .data!.ebookApp![index].userImage!,
-                                      fit: BoxFit.cover,
-                                      width: 60.w,
-                                      height: 60.w,
-                                      placeholder: (context, url) =>
-                                          Shimmer.fromColors(
-                                              baseColor: shimmerBaseColor(),
-                                              highlightColor:
-                                                  shimmerHighlightColor(),
-                                              child: Container(
-                                                width: 60.w,
-                                                height: 60.w,
-                                                color: comboBlackAndWhite(),
-                                              )),
-                                      placeholderFadeInDuration:
-                                          Duration(seconds: 2),
-                                      errorWidget: (context, url, error) =>
-                                          Image.asset(
-                                        "assets/images/noimagefound.jpg",
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                                leading: null, // Removido avatar - apenas nome
                                 trailing: Text(
                                   snapshot.data!.ebookApp![index].dtRate
                                       .toString(),
@@ -1852,7 +2034,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                                       backgroundColor:
                                                           comboBlackAndWhite(),
                                                       title: Text(
-                                                        "Delete Comment ??",
+                                                        "Excluir Comentário?",
                                                         style: TextStyle(
                                                           color:
                                                               comboWhiteAndBlack(),
@@ -1878,7 +2060,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                                       actions: [
                                                         TextButton(
                                                           child: Text(
-                                                            "Cancel",
+                                                            "Cancelar",
                                                             style: TextStyle(
                                                               color:
                                                                   getPrimaryAccentColor(),
@@ -1892,7 +2074,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                                         ),
                                                         TextButton(
                                                           child: Text(
-                                                            "Delete",
+                                                            "Excluir",
                                                             style: TextStyle(
                                                               color:
                                                                   getSecondaryAccentColor(),

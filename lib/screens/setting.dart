@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elearn/widgets/safe_image_widget.dart';
 import 'package:elearn/generated/l10n.dart';
 import 'package:elearn/language.dart';
 import 'package:elearn/model/Profile.dart';
@@ -11,7 +11,7 @@ import 'package:elearn/screens/setting/favourite.dart';
 import 'package:elearn/screens/setting/profile.dart';
 import 'package:elearn/service/httpservice.dart';
 import 'package:elearn/widgets/title.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
@@ -24,7 +24,6 @@ import 'package:http/http.dart' as http;
 import 'package:rflutter_alert/rflutter_alert.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shimmer/shimmer.dart';
 
 import '../consttants.dart';
 import '../language_constants.dart';
@@ -55,6 +54,8 @@ class _SettingState extends State<Setting> {
     getUserData();
     super.initState();
   }
+
+  FirebaseAuth _auth = FirebaseAuth.instance;
 
   String getAppShare() {
     if (Platform.isIOS) {
@@ -154,32 +155,9 @@ class _SettingState extends State<Setting> {
                     padding: EdgeInsets.only(top: 30.h, left: 15.w),
                     child: Column(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(80.r),
-                          child: CachedNetworkImage(
-                            imageUrl: profileModel!.ebookApp[0].userImage,
-                            fit: BoxFit.cover,
-                            width: 100.w,
-                            height: 100.w,
-                            placeholder: (context, url) => Shimmer.fromColors(
-                              baseColor: shimmerBaseColor(),
-                              highlightColor: shimmerHighlightColor(),
-                              child: Container(
-                                width: 100.w,
-                                height: 100.w,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(80.r),
-                                  color: comboBlackAndWhite(),
-                                ),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Image.asset(
-                              "assets/images/person.png",
-                              width: 100.w,
-                              height: 100.w,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                        SafeProfileImageWidget(
+                          imageUrl: profileModel!.ebookApp[0].userImage,
+                          size: 100.w,
                         ),
                         SizedBox(height: 20.h),
                         Text(
@@ -199,8 +177,8 @@ class _SettingState extends State<Setting> {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(80.r),
-                          child: Image.asset(
-                            "assets/images/person.png",
+                          child: Image.network(
+                            "https://vocsyinfotech.in/envato/cc/flutter_ebook/images/add-image.png",
                             fit: BoxFit.cover,
                             width: 100.w,
                             height: 100.w,
@@ -382,6 +360,7 @@ class _SettingState extends State<Setting> {
                         onPressed: () async {
                           SharedPreferences prefs =
                               await SharedPreferences.getInstance();
+                          _auth.signOut();
                           GoogleSignIn().signOut();
                           prefs.remove('userId');
                           prefs.remove('type');
@@ -426,6 +405,7 @@ class _SettingState extends State<Setting> {
                                 "1") {
                               SharedPreferences prefs =
                                   await SharedPreferences.getInstance();
+                              _auth.signOut();
                               await GoogleSignIn().signOut();
                               prefs.remove('userId');
                               prefs.remove('type');

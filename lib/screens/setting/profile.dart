@@ -2,7 +2,7 @@ import 'dart:convert' as convert;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elearn/widgets/safe_image_widget.dart';
 import 'package:elearn/consttants.dart';
 import 'package:elearn/generated/l10n.dart';
 import 'package:elearn/screens/login.dart';
@@ -296,21 +296,9 @@ class _EditProfileState extends State<EditProfile> {
                       height: 15.0.h,
                     ),
                     imageF == null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(80.r),
-                            child: CachedNetworkImage(
-                              imageUrl: widget.image,
-                              fit: BoxFit.cover,
-                              width: 100.w,
-                              height: 100.w,
-                              placeholder: (context, url) => SizedBox.shrink(),
-                              placeholderFadeInDuration: Duration(seconds: 2),
-                              errorWidget: (context, url, error) => Image.asset(
-                                "assets/images/person.png",
-                                width: MediaQuery.of(context).size.width * .37,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
+                        ? SafeProfileImageWidget(
+                            imageUrl: widget.image,
+                            size: 100.w,
                           )
                         : ClipRRect(
                             borderRadius: BorderRadius.circular(80.r),

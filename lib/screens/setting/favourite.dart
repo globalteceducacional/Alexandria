@@ -9,7 +9,7 @@ import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../databasefavourite/db.dart';
-import '../explore.dart';
+import '../../widgets/imageview.dart';
 
 class ReadTodoScreen extends StatefulWidget {
   @override

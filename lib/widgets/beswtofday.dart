@@ -1,5 +1,5 @@
 import 'package:elearn/screens/details_screen.dart';
-import 'package:elearn/screens/explore.dart';
+import 'package:elearn/widgets/imageview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';

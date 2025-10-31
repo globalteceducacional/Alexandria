@@ -5,7 +5,7 @@ import 'package:elearn/service/httpservice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elearn/widgets/safe_image_widget.dart';
 
 import '../consttants.dart';
 
@@ -97,25 +97,10 @@ class _SingleAuthorViewState extends State<SingleAuthorView> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16.r),
-                        child: CachedNetworkImage(
-                          imageUrl: "$apiLink/images/${widget.image}",
-                          height: 160.h,
-                          width: 160.h,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: Colors.grey[300],
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: kLightThemeBackGroundColor,
-                              ),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Colors.grey[300],
-                            child: Icon(Icons.person,
-                                size: 80.r, color: Colors.grey[600]),
-                          ),
+                        child: SafeProfileImageWidget(
+                          imageUrl:
+                              "$apiLink/images/${fixImageUrl(widget.image)}",
+                          size: 160.h,
                         ),
                       ),
                     ),
@@ -388,25 +373,10 @@ class _SingleAuthorViewState extends State<SingleAuthorView> {
                     topLeft: Radius.circular(16.r),
                     topRight: Radius.circular(16.r),
                   ),
-                  child: CachedNetworkImage(
+                  child: SafeBookCoverWidget(
                     imageUrl: book.bookCoverImg.startsWith('http')
-                        ? book.bookCoverImg
-                        : "$apiLink/images/${book.bookCoverImg}",
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: Colors.grey[300],
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: kLightThemeBackGroundColor,
-                        ),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: Colors.grey[300],
-                      child: Icon(Icons.broken_image,
-                          size: 40.r, color: Colors.grey[600]),
-                    ),
+                        ? fixImageUrl(book.bookCoverImg)
+                        : "$apiLink/images/${fixImageUrl(book.bookCoverImg)}",
                   ),
                 ),
               ),

@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:elearn/generated/l10n.dart';
 import 'package:elearn/screens/signup.dart';
 import 'package:elearn/service/httpservice.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
@@ -429,5 +430,54 @@ class CustomTextFiled extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+///Google Login
+Future<void> googleLogIn(context) async {
+  GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email']);
+
+  final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
+  if (googleSignInAccount == null) {
+    inAsyncCall.value = false;
+  }
+  final GoogleSignInAuthentication googleSignInAuthentication =
+      await googleSignInAccount!.authentication;
+
+  final AuthCredential credential = GoogleAuthProvider.credential(
+    accessToken: googleSignInAuthentication.accessToken,
+    idToken: googleSignInAuthentication.idToken,
+  );
+
+  final UserCredential authResult =
+      await FirebaseAuth.instance.signInWithCredential(credential);
+  final User? user = authResult.user;
+
+  if (user != null) {
+    SharedPreferences pref = await SharedPreferences.getInstance();
+    final String baseUrl =
+        "$apiLink/user_register_api.php?user_image=${user.photoURL}&name=${user.displayName}&email=${user.email}&password="
+        "&phone="
+        "&auth_id=${googleSignInAuthentication.accessToken}&type=Google";
+    final response = await http.get(Uri.parse(baseUrl));
+    final data = jsonDecode(response.body);
+    if (data['EBOOK_APP'][0]['success'] == '1') {
+      pref.setString('userId', data["EBOOK_APP"][0]["user_id"]);
+      showToast(msg: data['EBOOK_APP'][0]['MSG']);
+      getUserId();
+      inAsyncCall.value = false;
+      Get.offAll(() => HomeScreen());
+    } else {
+      showToast(msg: data['EBOOK_APP'][0]['MSG']);
+      if (data['EBOOK_APP'][0]['MSG'] == "Sorry ! Your account is deleted" ||
+          data['EBOOK_APP'][0]['MSG']
+              .toString()
+              .contains('Sorry ! Your account is deleted')) {
+        await googleSignIn.signOut();
+      }
+      inAsyncCall.value = false;
+    }
+  } else {
+    inAsyncCall.value = false;
   }
 }

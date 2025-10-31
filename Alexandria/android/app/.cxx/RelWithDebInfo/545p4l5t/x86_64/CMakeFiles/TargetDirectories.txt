@@ -1,2 +1,0 @@
-C:/xampp/htdocs/bylabapps/Alexandria/android/app/.cxx/RelWithDebInfo/545p4l5t/x86_64/CMakeFiles/edit_cache.dir
-C:/xampp/htdocs/bylabapps/Alexandria/android/app/.cxx/RelWithDebInfo/545p4l5t/x86_64/CMakeFiles/rebuild_cache.dir

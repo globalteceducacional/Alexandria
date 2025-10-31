@@ -1,12 +1,15 @@
 import 'dart:math';
 
 import 'package:elearn/generated/l10n.dart';
+import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:html/parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'main.dart' show isTablet;
 
 /// Admin Panel Url
 
@@ -20,6 +23,31 @@ RxBool inAsyncCall = false.obs;
 Color buttonColorAccent = Color(0xffffffff);
 const Color kLightThemeBackGroundColor = Color(0xff00a4cf);
 const Color kDarkThemeBackGroungColor = Color(0xff0c0b0b);
+
+const String prefixLink = 'https://audible.page.link';
+
+Future<Uri> createDynamicLink(
+    {id, required String path, required String image}) async {
+  final DynamicLinkParameters parameters = DynamicLinkParameters(
+    uriPrefix: prefixLink,
+    link: Uri.parse(id == null
+        ? '$prefixLink$path'
+        : "$prefixLink$path?id=$id&second=$image"),
+    androidParameters: const AndroidParameters(
+      packageName: 'com.flutter.audiobook.audible',
+    ),
+    iosParameters: const IOSParameters(
+      appStoreId: "1669453557",
+      bundleId: 'com.flutter.audiobook.audible',
+    ),
+  );
+  // ignore: deprecated_member_use
+  final dynamicLink = await FirebaseDynamicLinks.instance
+      // ignore: deprecated_member_use
+      .buildShortLink(parameters, shortLinkType: ShortDynamicLinkType.short);
+
+  return dynamicLink.shortUrl;
+}
 
 Color comboBlackAndWhite() {
   return mode.value == false
@@ -99,10 +127,76 @@ getUserId() async {
   print("UserId $userId");
 }
 
+/// Verifica se o dispositivo é um tablet
+bool isDeviceTablet(BuildContext context) {
+  // Verifica usando o MediaQuery - tablets geralmente têm shortestSide >= 600
+  final size = MediaQuery.of(context).size;
+  return size.shortestSide >= 600 || isTablet;
+}
+
 String htmlString({required String html}) {
   final document = parse(html);
   final String parsedString = parse(document.body!.text).documentElement!.text;
   return parsedString;
+}
+
+/// Decodifica HTML entities em strings (ex: &ccedil; vira ç)
+String decodeHtmlEntities(String text) {
+  return text
+      .replaceAll('&amp;', '&')
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&#39;', "'")
+      .replaceAll('&nbsp;', ' ')
+      // Acentos e caracteres especiais comuns
+      .replaceAll('&aacute;', 'á')
+      .replaceAll('&Aacute;', 'Á')
+      .replaceAll('&agrave;', 'à')
+      .replaceAll('&Agrave;', 'À')
+      .replaceAll('&acirc;', 'â')
+      .replaceAll('&Acirc;', 'Â')
+      .replaceAll('&atilde;', 'ã')
+      .replaceAll('&Atilde;', 'Ã')
+      .replaceAll('&eacute;', 'é')
+      .replaceAll('&Eacute;', 'É')
+      .replaceAll('&egrave;', 'è')
+      .replaceAll('&Egrave;', 'È')
+      .replaceAll('&ecirc;', 'ê')
+      .replaceAll('&Ecirc;', 'Ê')
+      .replaceAll('&iacute;', 'í')
+      .replaceAll('&Iacute;', 'Í')
+      .replaceAll('&oacute;', 'ó')
+      .replaceAll('&Oacute;', 'Ó')
+      .replaceAll('&ograve;', 'ò')
+      .replaceAll('&Ograve;', 'Ò')
+      .replaceAll('&ocirc;', 'ô')
+      .replaceAll('&Ocirc;', 'Ô')
+      .replaceAll('&otilde;', 'õ')
+      .replaceAll('&Otilde;', 'Õ')
+      .replaceAll('&uacute;', 'ú')
+      .replaceAll('&Uacute;', 'Ú')
+      .replaceAll('&ugrave;', 'ù')
+      .replaceAll('&Ugrave;', 'Ù')
+      .replaceAll('&uuml;', 'ü')
+      .replaceAll('&Uuml;', 'Ü')
+      .replaceAll('&ccedil;', 'ç')
+      .replaceAll('&Ccedil;', 'Ç')
+      .replaceAll('&ntilde;', 'ñ')
+      .replaceAll('&Ntilde;', 'Ñ');
+}
+
+/// Decodifica HTML entities especificamente em URLs de imagens
+String fixImageUrl(String url) {
+  String fixedUrl = decodeHtmlEntities(url);
+  // Garantir que a URL está codificada corretamente
+  try {
+    final uri = Uri.parse(fixedUrl);
+    return uri.toString();
+  } catch (e) {
+    // Se falhar, retorna a URL decodificada
+    return fixedUrl;
+  }
 }
 
 void customSnackBar(context, {String? title}) {

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:elearn/generated/l10n.dart';
 import 'package:elearn/model/exploreallbook.dart';
 import 'package:elearn/model/exploreauthor.dart';
@@ -8,10 +7,10 @@ import 'package:elearn/widgets/beswtofday.dart';
 import 'package:elearn/widgets/cat.dart' as catWidgets;
 import 'package:elearn/widgets/richtxt.dart';
 import 'package:elearn/widgets/title.dart';
+import 'package:elearn/widgets/imageview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:shimmer/shimmer.dart';
 
 import '../consttants.dart';
 import 'allauthor.dart';
@@ -53,17 +52,19 @@ class _ExploreState extends State<Explore> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: OrientationBuilder(
-        builder: (context, orientation) {
-          // Verifica a orientação do dispositivo
-          if (orientation == Orientation.portrait) {
-            // Configuração para orientação vertical
-            return _portraitContent();
-          } else {
-            // Configuração para orientação horizontal
-            return _landscapeContent();
-          }
-        },
+      body: SafeArea(
+        child: OrientationBuilder(
+          builder: (context, orientation) {
+            // Verifica a orientação do dispositivo
+            if (orientation == Orientation.portrait) {
+              // Configuração para orientação vertical
+              return _portraitContent();
+            } else {
+              // Configuração para orientação horizontal
+              return _landscapeContent();
+            }
+          },
+        ),
       ),
     );
   }
@@ -637,42 +638,6 @@ class AuthorView extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class Imageview extends StatelessWidget {
-  const Imageview({required this.image, this.radius, this.height, this.width});
-
-  final String image;
-  final double? radius;
-  final double? height;
-  final double? width;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius ?? 8.r),
-      child: CachedNetworkImage(
-        fit: BoxFit.cover,
-        height: height ?? MediaQuery.of(context).size.height * 2,
-        width: width ?? MediaQuery.of(context).size.width * 2,
-        placeholder: (context, url) => Shimmer.fromColors(
-            baseColor: shimmerBaseColor(),
-            highlightColor: shimmerHighlightColor(),
-            child: Container(
-              height: height,
-              width: width,
-              color: comboBlackAndWhite(),
-            )),
-        imageUrl: "$apiLink/images/$image",
-        errorWidget: (context, url, error) => Image.asset(
-          "assets/images/noimagefound.jpg",
-          height: height,
-          width: width,
-          fit: BoxFit.cover,
         ),
       ),
     );

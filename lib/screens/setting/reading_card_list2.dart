@@ -1,10 +1,8 @@
 import 'package:elearn/consttants.dart';
 import 'package:elearn/databasefavourite/db.dart';
 import 'package:elearn/generated/l10n.dart';
-import 'package:elearn/screens/explore.dart';
-import 'package:elearn/service/httpservice.dart';
+import 'package:elearn/widgets/imageview.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ReadingListCard2 extends StatefulWidget {
@@ -104,35 +102,23 @@ class _ReadingListCard2State extends State<ReadingListCard2> {
                         overflow: TextOverflow.ellipsis,
                         fontFamily: "Gilroy-Medium"),
                   ),
-                  RatingBar(
-                    itemSize: 30.h,
-                    initialRating: double.parse(widget.rating),
-                    direction: Axis.horizontal,
-                    allowHalfRating: false,
-                    itemCount: 5,
-                    ratingWidget: RatingWidget(
-                      full: Icon(
-                        Icons.star_rounded,
-                        color: Colors.orange,
+                  Row(
+                    children: [
+                      Icon(Icons.star, color: Color(0xFFFFD700), size: 18.r),
+                      SizedBox(width: 5.w),
+                      Text(
+                        widget.rating.isNotEmpty
+                            ? double.tryParse(widget.rating)
+                                    ?.toStringAsFixed(1) ??
+                                "0.0"
+                            : "N/A",
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          color: comboWhiteAndBlack(),
+                          fontFamily: "Gilroy-Bold",
+                        ),
                       ),
-                      half: Icon(
-                        Icons.star_half,
-                        color: Colors.orange,
-                      ),
-                      empty: Icon(
-                        Icons.star_border_rounded,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    itemPadding: EdgeInsets.symmetric(horizontal: 2.0),
-                    onRatingUpdate: (rating) {
-                      if (userId != null) {
-                        HttpService().submitRating(
-                            rating: rating, bookid: widget.bookid.toString());
-                      } else {
-                        customSnackBar(context);
-                      }
-                    },
+                    ],
                   ),
                 ],
               ),

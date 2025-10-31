@@ -1,2 +1,0 @@
-C:/Users/J.Informatica/Desktop/Apps/Alexandria/android/app/.cxx/Debug/x5m1c315/armeabi-v7a/CMakeFiles/edit_cache.dir
-C:/Users/J.Informatica/Desktop/Apps/Alexandria/android/app/.cxx/Debug/x5m1c315/armeabi-v7a/CMakeFiles/rebuild_cache.dir

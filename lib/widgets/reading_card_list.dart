@@ -1,7 +1,12 @@
-import 'package:elearn/screens/explore.dart';
+import 'package:elearn/widgets/imageview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+// import '../epub_viewer_lib/epub_viewer.dart';
+// import '../epub_viewer_lib/model/epub_locator.dart';
+// import '../epub_viewer_lib/utils/util.dart';
+
+// Placeholder temporário enquanto o vocsy_epub_viewer está desabilitado
 class EpuB extends StatelessWidget {
   EpuB({required this.id, required this.path});
 
@@ -11,7 +16,9 @@ class EpuB extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("EPUB Viewer desabilitado")),
+      appBar: AppBar(
+        title: Text("EPUB Viewer desabilitado"),
+      ),
       body: Center(
         child: Text("O visualizador EPUB está temporariamente desabilitado."),
       ),
@@ -33,21 +40,20 @@ class ReadingListCard extends StatelessWidget {
   final VoidCallback onTap;
 
   ReadingListCard({Key? key, required this.bookImage, required this.onTap})
-    : super(key: key);
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.only(left: 10.r),
-        child: Imageview(
-          image: bookImage,
-          width: 160.r,
-          height: 240.r,
-          radius: 8.r,
-        ),
-      ),
-    );
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.only(left: 10.r),
+          child: Imageview(
+            image: bookImage,
+            width: 160.r,
+            height: 240.r,
+            radius: 8.r,
+          ),
+        ));
   }
 }

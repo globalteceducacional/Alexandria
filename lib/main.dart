@@ -5,6 +5,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:elearn/consttants.dart';
 import 'package:elearn/model/detailsProvider.dart';
 import 'package:elearn/splashScreen.dart';
+import 'package:elearn/services/image_validation_service.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
@@ -12,7 +14,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-// import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,14 +21,69 @@ import 'generated/l10n.dart';
 import 'language_constants.dart';
 
 bool isAndroidVersionUp13 = false;
+bool isTablet = false;
+
+/// Função para detectar se o dispositivo é um tablet
+Future<void> _checkIfTablet() async {
+  try {
+    final deviceInfoPlugin = DeviceInfoPlugin();
+
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfoPlugin.androidInfo;
+      final data = androidInfo.data;
+      final model = data['model']?.toString().toLowerCase() ?? '';
+      final device = data['device']?.toString().toLowerCase() ?? '';
+
+      // Verifica se é tablet pelo nome do modelo ou device
+      isTablet = model.contains('tablet') ||
+          model.contains('pad') ||
+          device.contains('tablet') ||
+          androidInfo.product.toLowerCase().contains('tablet');
+    } else if (Platform.isIOS) {
+      final iosInfo = await deviceInfoPlugin.iosInfo;
+      final model = iosInfo.model.toLowerCase();
+      final name = iosInfo.name.toLowerCase();
+
+      // iPad geralmente tem "ipad" no modelo ou nome
+      isTablet = model.contains('ipad') ||
+          name.contains('ipad') ||
+          iosInfo.utsname.machine.toLowerCase().contains('ipad');
+    }
+
+    debugPrint(
+        'Dispositivo detectado como: ${isTablet ? "Tablet" : "Celular"}');
+  } catch (e) {
+    debugPrint('Erro ao detectar tipo de dispositivo: $e');
+    isTablet = false; // Por padrão, assume celular se houver erro
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight
-  ]);
+
+  // Detectar se é tablet antes de definir orientações permitidas
+  await _checkIfTablet();
+
+  if (isTablet) {
+    // Tablet: permite todas as orientações
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  } else {
+    // Celular: apenas retrato
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
+
+  await Firebase.initializeApp();
+
+  // Inicializa o serviço de validação de imagens
+  await ImageValidationService.cleanupTempImages();
 
   // Comentado código do OneSignal
   // final String oneSignalAppId = "331a8c6c-3c1e-45e9-b012-049ff5f26e68";

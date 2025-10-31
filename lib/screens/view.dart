@@ -74,7 +74,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       );
 
   TextStyle get _errorStyle => TextStyle(
-        color: comboWhiteAndBlack().withAlpha(153),
+        color: comboWhiteAndBlack().withValues(alpha: 0.7),
         fontFamily: "Gilroy-Medium",
         fontSize: 14.sp,
       );
@@ -370,7 +370,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                   decoration: InputDecoration(
                     hintText: "Número da página (1-$_totalPages)",
                     hintStyle: TextStyle(
-                      color: comboWhiteAndBlack().withAlpha(153),
+                      color: comboWhiteAndBlack().withValues(alpha: 0.6),
                       fontFamily: "Gilroy-Medium",
                     ),
                     enabledBorder: UnderlineInputBorder(
