@@ -1,0 +1,2 @@
+C:/Users/J.Informatica/Downloads/Apps Gestao/Alexandria/android/app/.cxx/Debug/6m133114/x86/CMakeFiles/edit_cache.dir
+C:/Users/J.Informatica/Downloads/Apps Gestao/Alexandria/android/app/.cxx/Debug/6m133114/x86/CMakeFiles/rebuild_cache.dir

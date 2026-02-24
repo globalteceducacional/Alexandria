@@ -1,0 +1,2 @@
+C:/xampp/htdocs/bylabapps/Alexandria/android/app/.cxx/Debug/4857711m/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/xampp/htdocs/bylabapps/Alexandria/android/app/.cxx/Debug/4857711m/armeabi-v7a/CMakeFiles/rebuild_cache.dir
