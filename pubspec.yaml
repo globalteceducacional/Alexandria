@@ -1,0 +1,73 @@
+name: alexandria
+description: "App de livros conectado ao gerenciador ebook."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Variáveis de ambiente (.env)
+  flutter_dotenv: ^5.1.0
+
+  # HTTP client para consumir a API PHP
+  http: ^1.2.2
+
+  # Gerenciamento de estado com ChangeNotifier
+  provider: ^6.1.2
+
+  # Persistir sessão do usuário (login)
+  shared_preferences: ^2.3.3
+
+  # Cache de imagens de rede
+  cached_network_image: ^3.4.1
+
+  # Abrir PDFs e links externos de livros
+  url_launcher: ^6.3.1
+
+  # Leitor de PDF multiplataforma
+  pdfx: ^2.6.0
+
+  # Leitor de EPUB baseado em widgets
+  epub_view: ^3.2.0
+  image_picker: ^1.2.1
+  image_cropper: ^11.0.0
+  path_provider: ^2.1.5
+  flutter_html: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+  # Gerar ícone do app
+  flutter_launcher_icons: ^0.11.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
+    - assets/images/
+
+# Configuração do ícone do app
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: "assets/images/app_icon.png"
+    background_color: "#0d2d53"
+    theme_color: "#0d2d53"
+  windows:
+    generate: true
+    image_path: "assets/images/app_icon.png"
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: "assets/images/app_icon.png"
